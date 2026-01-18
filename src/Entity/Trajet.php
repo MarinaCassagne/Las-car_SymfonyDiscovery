@@ -83,7 +83,11 @@ class Trajet
     {
         $this->idEtapeTrajet = new ArrayCollection();
         $this->idReservation = new ArrayCollection();
+       
     }
+
+
+    
 
     public function getId(): ?int
     {
