@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\Trajet; // Entité Trajet pour pouvoir instancier un trajet
+use App\Entity\User; // Entité User pour pouvoir instancier récupérer IdUser
+use App\Entity\Moderation; // Entité Moderation pour pouvoir instancier récupérer IdModeration
 use App\Form\TrajetType;
 use App\Repository\TrajetRepository;
 use DateTimeInterface;
@@ -12,7 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse; // pour renvoyer une réponse
 use Symfony\Component\HttpFoundation\Request; // pour utiliser les methodes HTTP: GET, POST, DELETE, UPDATE... 
 use Symfony\Component\HttpFoundation\Response; // pour renvoyer les codes HTTP (202, 404, ...)
 use Symfony\Component\Routing\Attribute\Route; // pour définir des URLs
-use Symfony\Component\Validator\Constraint;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Exception\UnexpectedValueException;
 
@@ -179,15 +181,46 @@ final class TrajetController extends AbstractController
 
             //======== NATURE DU TRAJET ========
             $nature_trajet = $data['nature_trajet']?? '';
-            // Si la date de publication n'est pas renseignée, 
+            // Si la nature du trajet n'est pas égale à la liste des enum, 
+            // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
+            
+            // Si la nature du trajet n'est pas renseigné
             if ($nature_trajet === '') {
                 // alors retourne une erreur
-                return $this->errorResponse('Publication date is required.', Response::HTTP_BAD_REQUEST);
+                return $this->errorResponse('Nature of the journey is required.', Response::HTTP_BAD_REQUEST);
             }
 
-            //========
+            //======== TYPE DE TRAJET ========
+            $type_trajet = $data['type_trajet']?? '';
 
-        // Création d'un trajet
+            // Si le type du trajet n'est pas égale à la liste des enum, 
+            // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
+            
+            // Si le type du trajet n'est pas renseigné,
+            if ($type_trajet === '') {
+                // alors retourne une erreur
+                return $this->errorResponse('Type of journey is required.', Response::HTTP_BAD_REQUEST);
+            }
+
+            //======== STATUT VALIDE TRAJET ========
+            $statut_valide = $data['$statut_valide']?? '';
+            
+            // Si le type du trajet n'est pas égale à la liste des enum, 
+            // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
+
+            // Si le statut du trajet n'est pas renseigné,
+            if ($type_trajet === '') {
+                // alors retourne une erreur
+                return $this->errorResponse('Type of journey is required.', Response::HTTP_BAD_REQUEST);
+            }
+
+
+
+
+        // ==============================================
+        //         CRÉATION D'UN TRAJET 
+        // ==============================================    
+
         $trajet = (new Trajet())
             ->setDateDeDepart($date_de_depart)
             ->setLongitudeLieuDepartConducteur($longitude_lieu_depart_conducteur)
@@ -353,7 +386,7 @@ final class TrajetController extends AbstractController
     /**
      * Valide et vérifie la data de l'enum
      * @return void
-     * 
+     * https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
      */
     private function parseEnum()
     {
