@@ -1,7 +1,11 @@
 ﻿# Las-car_SymfonyDiscovery
 
+Las'car – Clone de BlaBlaCar 
+Projet de covoiturage inspiré de BlaBlaCar,
+développé en équipe (Alan, Gabin, David)
+avec le framework Symfony. 
 
-Équipe : Alan, Gabin, David
+La phase de conception a inclus : diagrammes UML, modélisation de la base de données avec la méthode Merise (MCD/MLD), et maquettes UI réalisées sur Figma.
 
-📌 Ce dépôt représente seulement une partie du projet du travail en équipe car seul mes branches apparraissent. 
-Pour retrouver l'intégralité du travail en équipe, allez sur le lien GitLab : https://gitlab.com/marinacassagnebeweb1/Las-Car_SymfonyDiscovery
+⚠️ Note : Ce dépôt GitHub contient uniquement mes contributions personnelles. Pour accéder au projet complet développé en équipe, consultez le dépôt : https://gitlab.com/marinacassagnebeweb1/Las-Car_SymfonyDiscovery
+
