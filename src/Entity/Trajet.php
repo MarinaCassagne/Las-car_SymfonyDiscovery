@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert; // permet de mettre des contraintes pour valider les données
 
 #[ORM\Entity(repositoryClass: TrajetRepository::class)]
 class Trajet
@@ -20,6 +21,7 @@ class Trajet
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotBlank]
     private ?\DateTime $date_de_depart = null;
 
     #[ORM\Column(length: 255)]
@@ -53,9 +55,17 @@ class Trajet
     private ?\DateTime $date_de_publication = null;
 
     #[ORM\Column(enumType: NatureTrajet::class)]
+    #[Assert\Choice(
+    callback: [NatureTrajet::class],
+    message: 'The nature of the path "{{ value }}" is not valid.'
+    )]
     private ?NatureTrajet $nature_trajet = null;
 
     #[ORM\Column(enumType: TypeTrajet::class)]
+    #[Assert\Choice(
+    callback: [TypeTrajet::class],
+    message: 'Le nature du trajet "{{ value }}" n\'est pas valide'
+    )]
     private ?TypeTrajet $type_trajet = null;
 
     #[ORM\Column(enumType: StatutValidTrajet::class)]

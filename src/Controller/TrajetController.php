@@ -2,30 +2,28 @@
 
 namespace App\Controller;
 
+use App\Entity\EtapeTrajet;
 use App\Entity\Trajet; // Entité Trajet pour pouvoir instancier un trajet
 use App\Entity\User; // Entité User pour pouvoir instancier récupérer IdUser
 use App\Entity\Moderation; // Entité Moderation pour pouvoir instancier récupérer IdModeration
+use App\Entity\Reservation;
 use App\Form\TrajetType;
 use App\Repository\TrajetRepository;
-use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface; // pour sauvergarder ou supprimer dans la BDD
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController; // classe parente pour utiliser des méthodes spécifique comme render() pour renvoyer une vue ou json() pour renvoyer un tableau en JSON
 use Symfony\Component\HttpFoundation\JsonResponse; // pour renvoyer une réponse au format JSON
 use Symfony\Component\HttpFoundation\Request; // pour utiliser les methodes HTTP: GET, POST, DELETE, UPDATE... 
 use Symfony\Component\HttpFoundation\Response; // pour renvoyer les codes HTTP (202, 404, ...)
 use Symfony\Component\Routing\Attribute\Route; // pour définir des URLs
-use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\Exception\UnexpectedTypeException;
-use Symfony\Component\Validator\Exception\UnexpectedValueException;
+use Symfony\Component\Validator\Validator\ValidatorInterface; //
 
-#[Route('/trajet')]
 final class TrajetController extends AbstractController
 {   
     // URL pour avoir la liste des trajets
     #[Route('/api/trajets',name: 'app_trajets_list', methods: ['GET'])]
     
     // ========================================================================
-    //                        LISTER TOUS LES TRAJETS
+    //                        ✨LISTER TOUS LES TRAJETS
     // ========================================================================
     
     // Lister les trajets sous format JSON
@@ -45,12 +43,12 @@ final class TrajetController extends AbstractController
     }
 
     // ========================================================================
-    //                        CRÉER UN TRAJET
+    //                        ✨CRÉER UN TRAJET
     // ========================================================================
 
     #[Route('/api/trajets', name: 'app_trajet_create', methods: ['POST'])]
 
-    // Crée un nouveau trajet et le sauvegarder en base de données
+    // Créer un nouveau trajet et le sauvegarder en base de données
     public function create(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         // Décode le JSON envoyé dans le corps de la requête
@@ -59,7 +57,7 @@ final class TrajetController extends AbstractController
         
         if ($data === null)
         {
-           // Si le JSON est invalide, retourne une erreur 400 (Bad Request)
+           // Si le JSON est invalide, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
            return $this->errorResponse('Invalid JSON body.', Response::HTTP_BAD_REQUEST);
         }
               
@@ -68,159 +66,226 @@ final class TrajetController extends AbstractController
         // ==============================================
 
             //============= DATE DE DÉPART ==================
-            // Récupérer la date de départ dans les données
+
+            // Récupérer la donnée date de départ dans la requête qui sera au format string après decodeJson
             $date_de_depart = $data['date_de_depart']?? '';
 
-            // Nettoyer et valider la data $date_de_depart
-            // TODO AJOUTER LA VÉRIFICATION DU FORMAT DE LA DATE : Utiliser DateTimeValidator ?
-            // Si la date de départ n'est pas au bon format, 
-            // if ()
-            // {
-            //     Alors retourne une erreur
-            //     return $this->errorResponse('Departure date is not format Y-m-d H:i:s.', Response::HTTP_BAD_REQUEST);
-            // }
-
-            // Si la date de départ n'est pas renseignée, 
-            if ($date_de_depart === '') {
-                // alors retourne une erreur
-                return $this->errorResponse('Departure date is required.', Response::HTTP_BAD_REQUEST);
-            }
+                // Valider le format de date
+                
+                // Nettoyer et valider la data $date_de_depart
+                
+                // Si la date de départ n'est pas renseignée, 
+                if ($date_de_depart === '' ||$date_de_depart === null ) {
+                    // Alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                    return $this->errorResponse('Departure date is required.', Response::HTTP_BAD_REQUEST);
+                }
             
-            //============= "ADRESSES" ==================
+            //============= "ADRESSES" =====================
 
             // TODO ⚠️ AJOUTER LA VÉRIFICATION : SI LES ADRESSES EXISTENT
             // TODO AJOUTER  les attributs $adresse_lieu_depart_conducteur et $adresse_lieu_arrive_conducteur
             
-                //=== ADRESSE LIEU DE DÉPART==========
+                //=== ADRESSE LIEU DE DÉPART================
 
+                // Récupérer la donnée longitude_lieu_depart_conducteur dans la requête
                 $longitude_lieu_depart_conducteur = $data['longitude_lieu_depart_conducteur']?? '';
-                // Nettoyer et valider la data $longitude_lieu_depart_conducteur
-                if ($longitude_lieu_depart_conducteur === '') {
-                    // Si la longitude du lieu de depart du conducteur est vide, retourne une erreur
-                    return $this->errorResponse('Longitude departure location driver is required.', Response::HTTP_BAD_REQUEST);
-                }
 
+                    // Nettoyer et valider la data $longitude_lieu_depart_conducteur
+                    // Si la longitude du lieu de depart du conducteur est vide, 
+                    if ($longitude_lieu_depart_conducteur === '') {
+                        //Alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                        return $this->errorResponse('Longitude departure location driver is required.', Response::HTTP_BAD_REQUEST);
+                    }
+
+                // Récupérer la donnée latitude_lieu_depart_conducteur dans la requête
                 $latitude_lieu_depart_conducteur = $data['latitude_lieu_depart_conducteur']?? '';
-                // Nettoyer et valider la data $latitude_lieu_depart_conducteur
-                if ($latitude_lieu_depart_conducteur === '') {
-                    // Si la latitude du lieu de depart du conducteur est vide, retourne une erreur
-                    return $this->errorResponse('Latitude location departure driver is required.', Response::HTTP_BAD_REQUEST);
-                }
 
-                //=== ADRESSE LIEU DE D'ARRIVÉ ==========
-                
+                    // Nettoyer et valider la data $latitude_lieu_depart_conducteur
+                    // Si la latitude du lieu de depart du conducteur est vide,
+                    if ($latitude_lieu_depart_conducteur === '') {
+                        // Alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                        return $this->errorResponse('Latitude location departure driver is required.', Response::HTTP_BAD_REQUEST);
+                    }
+
+                //=== ADRESSE LIEU DE D'ARRIVÉE ============
+
+                // Récupérer la donnée longitude_lieu_arrive_conducteur dans la requête
                 $longitude_lieu_arrive_conducteur = $data['longitude_lieu_arrive_conducteur']?? '';
-                // Nettoyer et valider la data $longitude_lieu_arrive_conducteur
-                if ($longitude_lieu_arrive_conducteur === '') {
-                    // Si la la longitude du lieu d'arrivé du conducteur est vide, retourne une erreur
-                    return $this->errorResponse('Longitude location arrival driver is required.', Response::HTTP_BAD_REQUEST);
-                }
 
+                    // Nettoyer et valider la data $longitude_lieu_arrive_conducteur
+                    if ($longitude_lieu_arrive_conducteur === '') {
+                        // Si la la longitude du lieu d'arrivé du conducteur est vide, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                        return $this->errorResponse('Longitude location arrival driver is required.', Response::HTTP_BAD_REQUEST);
+                    }
+
+                // Récupérer la donnée latitude_lieu_arrive_conducteur dans la requête
                 $latitude_lieu_arrive_conducteur = $data['latitude_lieu_arrive_conducteur']?? '';
-                // Nettoyer et valider la latitude du lieu de d'arrivée conducteur
-                if ($latitude_lieu_arrive_conducteur === '') {
-                    // Si la latitude du lieu d'arrivé du conducteur est vide, retourne une erreur
-                    return $this->errorResponse('Latitude location arrival driver is required.', Response::HTTP_BAD_REQUEST);
-                }
 
+                    // Nettoyer et valider la latitude du lieu de d'arrivée conducteur
+                    if ($latitude_lieu_arrive_conducteur === '') {
+                        // Si la latitude du lieu d'arrivé du conducteur est vide, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                        return $this->errorResponse('Latitude location arrival driver is required.', Response::HTTP_BAD_REQUEST);
+                    }
+         
+            //============= DURÉE EN MINUTES =========================
             
-
-            //============= DURÉE ==================
             // TODO UTILISER API POUR CALCULER LA DURÉE EN UTILISANT LES COORDONNÉES GPS DU LIEU DE DÉPART ET D'ARRIVÉE
             //  Ressource :https://distancematrix.ai/fr/guides/easy-migrate
-                $duree = 10;
+            
+            // Récupérer la donnée durée dans la requête
+            $duree = $data['duree']?? '';
 
-            // Nettoyer et valider la duree
-            if ($duree === '') {
-                // Si la duree est vide, retourne une erreur
-                return $this->errorResponse('Number of places is required.', Response::HTTP_BAD_REQUEST);
-            }
+                // Nettoyer et valider la data duree
+                if ($duree === '') {
+                    // Si la duree est vide, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                    return $this->errorResponse('Duration is required.', Response::HTTP_BAD_REQUEST);
+                }
 
             //============= NOMBRE DE KM ==================
             // TODO UTILISER API POUR CALCULER LE NOMBRE DE KM EN UTILISANT LES COORDONNÉES GPS DU LIEU DE DÉPART ET D'ARRIVÉE
-                $nombre_de_km = 40;
-             if ($nombre_de_km === '') {
-                // Si le nombre de km est vide, retourne une erreur
-                return $this->errorResponse('Number of kilometers is required.', Response::HTTP_BAD_REQUEST);
-            }
-
-            //============= NOMBRE DE PLACES ==================
-            $nombre_de_place = $data['nombre_de_place']?? '';
-            if ($nombre_de_place === '') {
-                // Si le nombre de place est vide, retourne une erreur
-                return $this->errorResponse('Number of places is required.', Response::HTTP_BAD_REQUEST);
-            }
-
-            //============= PRIX ==================
-            $priceError = null;
-            $prix = $this->parsePrice($data['prix'] ?? null, true, $priceError);
             
+            // Récupérer la donnée nombre de km dans la requête
+            $nombre_de_km = $data['nombre_de_km']?? '';
+
+                // Nettoyer et valider la donnée nombre de km
+                if ($nombre_de_km === '') {
+                    // Si le nombre de km est vide, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                    return $this->errorResponse('Number of kilometers is required.', Response::HTTP_BAD_REQUEST);
+                }
+
+            //============= NOMBRE DE PLACES ===============
+            
+            // Récupérer la donnée nombre de place dans la requête
+            $nombre_de_place = $data['nombre_de_place']?? '';
+
+                // Nettoyer et valider la donnée nombre de place
+                if (!is_integer($nombre_de_place) & $nombre_de_place === '') {
+                    // Si le nombre de place n'est pas un nombre et non renseigné, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                    return $this->errorResponse('Number of places is required.', Response::HTTP_BAD_REQUEST);
+                }
+
+            //============= PRIX ===========================
+
+            // Récupérer la donnée prix, la nettoyer
+            $prix = $this->parseFloat($data,$data['prix'] ?? null, true, $error);
+            
+            // Valider la donnée prix
             if ($prix === null) {
-                // Si le prix est vide, retourne une erreur
-                return $this->errorResponse($priceError ?? 'Invalid price.', Response::HTTP_BAD_REQUEST);
+                // Si le prix est null, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                return $this->errorResponse($error ?? 'Invalid price.', Response::HTTP_BAD_REQUEST);
             }
-
-            //======== DATE DE PUBLICATION ========
-            // Récupérer la date de publication dans les données
-            $date_de_publication = $data['date_de_publication']?? '';
-
-            // Nettoyer et valider la data $date_de_publication
-            // TODO AJOUTER LA VÉRIFICATION DU FORMAT DE LA DATE : Utiliser DateTimeValidator ?
-            // Si la date de publication n'est pas au bon format, 
-            // if ()
-            // {
-            //     Alors retourne une erreur
-            //     return $this->errorResponse('Publication date is not format Y-m-d H:i:s.', Response::HTTP_BAD_REQUEST);
-            // }
-
-            // Si la date de publication n'est pas renseignée, 
-            if ($date_de_publication === '') {
-                // alors retourne une erreur
-                return $this->errorResponse('Publication date is required.', Response::HTTP_BAD_REQUEST);
-            }
-
-            //======== NATURE DU TRAJET ========
+            
+            //======== NATURE DU TRAJET ==================
+            
+            // Récupérer la nature du trajet dans la requête (OFFRE, DEMANDE)
             $nature_trajet = $data['nature_trajet']?? '';
             // Si la nature du trajet n'est pas égale à la liste des enum, 
             // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
             
             // Si la nature du trajet n'est pas renseigné
             if ($nature_trajet === '') {
-                // alors retourne une erreur
+                // alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
                 return $this->errorResponse('Nature of the journey is required.', Response::HTTP_BAD_REQUEST);
             }
 
-            //======== TYPE DE TRAJET ========
+            //======== TYPE DE TRAJET ====================
+            
+            // Récupérer le type de trajet dans la requête (DOMICILE_TRAVAIL, EVENEMENT)
             $type_trajet = $data['type_trajet']?? '';
 
-            // Si le type du trajet n'est pas égale à la liste des enum, 
+            // Si le type du trajet n'est pas égale à un élément de l'enum, 
             // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
             
             // Si le type du trajet n'est pas renseigné,
             if ($type_trajet === '') {
-                // alors retourne une erreur
-                return $this->errorResponse('Type of journey is required.', Response::HTTP_BAD_REQUEST);
+                // Alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                return $this->errorResponse('Type of journey is invalid (DOMICILE_TRAVAIL, EVENEMENT).', Response::HTTP_BAD_REQUEST);
             }
 
-            //======== STATUT VALIDE TRAJET ========
-            $statut_valide = $data['$statut_valide']?? '';
+            //======== STATUT VALIDE TRAJET =============
+
+            // Récupérer le statut valide du trajet dans la requête (EN_ATTENTE, VALIDE, REFUSE)
+            $statut_valide = $data['statut_valide']?? '';
             
-            // Si le type du trajet n'est pas égale à la liste des enum, 
-            // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
+                // Si le statut valide du trajet n'est pas égale à un élément de l'enum, 
+                // TODO https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
 
-            // Si le statut du trajet n'est pas renseigné,
-            if ($type_trajet === '') {
-                // alors retourne une erreur
-                return $this->errorResponse('Type of journey is required.', Response::HTTP_BAD_REQUEST);
+                // Alors retourner une erreur.
+                // return $this->errorResponse(' Valid trip status is invalid (EN_ATTENTE, VALIDE, REFUSE).', Response::HTTP_BAD_REQUEST);
+                
+
+                // Si le statut du trajet n'est pas renseigné,
+                if ($statut_valide === '') {
+                    // Alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                    return $this->errorResponse('Valid trip status is required.', Response::HTTP_BAD_REQUEST);
+                }
+
+            //======== DATE DE PUBLICATION ================
+
+            // Récupérer la date de publication dans la requête
+            $date_de_publication = $data['date_de_publication']?? '';
+
+                // TODO AJOUTER LA VÉRIFICATION DU FORMAT DE LA DATE : Utiliser DateTimeValidator ?
+                // Nettoyer et valider la data $date_de_publication
+                
+                // Si la date de publication n'est pas au bon format, 
+                // if ()
+                    // {
+                    //     Alors retourner une erreur
+                    //     return $this->errorResponse('Publication date is not format Y-m-d H:i:s.', Response::HTTP_BAD_REQUEST);
+                    // }
+
+                // Si la date de publication n'est pas renseignée, 
+                if ($date_de_publication === '') {
+                    // Alors retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                    return $this->errorResponse('Publication date is required.', Response::HTTP_BAD_REQUEST);
+                }
+
+            //======== ID MODÉRATION ========
+            
+            // Récupérer l'id Modération si il en existe une pour ce trajet
+            $idModeration = $entityManager->getRepository(Moderation::class)->find($data['idModeration']);
+            
+            // Renvoyer une message si idModeration avec le code HTTP (HperTexte Transfer Protocol) 400. 
+            if (!$idModeration) {
+            return $this->errorResponse('Moderation id : {idModeration} not found.', Response::HTTP_BAD_REQUEST);
             }
 
+            //======== ID USER ========
+            
+            // Récupérer l'idUser dans la requête de la personne ayant proposer le trajet
+            $User = $entityManager->getRepository(User::class)->find($data['User']);
+            
+            // Renvoyer une message si idUser non trouvé avec le code HTTP (HperTexte Transfer Protocol) 400.
+            if (!$User) {
+            return $this->errorResponse('User id : {User} not found.', Response::HTTP_BAD_REQUEST);
+            }
 
+            //======== ID ÉTAPE TRAJET ========
+                        
+            // Récupérer l'idEtapeTrajet dans la requête associé à l'i
+            $idEtapeTrajet = $entityManager->getRepository(EtapeTrajet::class)->find($data['idEtateTrajet']);
+            
+            // Renvoyer une message si idEtapeTrajet non trouvé avec le code HTTP (HperTexte Transfer Protocol) 400.
+            if (!$idEtapeTrajet) {
+            return $this->errorResponse('Journey stage id : {idEtapeTrajet} not found.', Response::HTTP_BAD_REQUEST);
+            }
 
+            //======== ID RÉSERVATION ========
+                        
+            // Récupérer l'idReservation dans la requête associé à l'i
+            $idReservation = $entityManager->getRepository(Reservation::class)->find($data['idReservation']);
+            
+            // Renvoyer une message si idEtapeTrajet non trouvé avec le code HTTP (HperTexte Transfer Protocol) 400.
+            if (!$idReservation) {
+            return $this->errorResponse('Reservation id : {idReservation} not found.', Response::HTTP_BAD_REQUEST);
+            }
 
         // ==============================================
         //         CRÉATION D'UN TRAJET 
         // ==============================================    
 
+        // Instancier l'objet trajet
         $trajet = (new Trajet())
             ->setDateDeDepart($date_de_depart)
             ->setLongitudeLieuDepartConducteur($longitude_lieu_depart_conducteur)
@@ -234,54 +299,179 @@ final class TrajetController extends AbstractController
             ->setNatureTrajet($nature_trajet)
             ->setTypeTrajet($type_trajet)
             ->setStatutValide($statut_valide)
+            ->setDateDePublication($date_de_publication)
             ->setIdModeration($idModeration)
             ->setUser($User)
-            ->setIdEtapeTrajet($idEtapeTrajet)
-            ->setIdReservation($idReservation)
-            ->setDateDePublication($date_de_publication);
-
-    
-        $form = $this->createForm(TrajetType::class, $trajet);
-        $form->handleRequest($request);
+            ->addIdEtapeTrajet($idEtapeTrajet)
+            ->addIdReservation($idReservation);       
 
         // Sauvegarder le trajet dans la BDD
-        if ($form->isSubmitted() && $form->isValid()) {
+
             $entityManager->persist($trajet);
             $entityManager->flush();
-
-            return $this->redirectToRoute('app_trajet_index', [], Response::HTTP_SEE_OTHER);
-        } 
         
-        return $this->render('trajet/new.html.twig', [
-            'trajet' => $trajet,
-            'form' => $form,
-        ]);
+        // Renvoyer le trajet créé au format JSON avec le code HTTP 201.
+        return $this->json($this->serializeTrajet($trajet), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', name: 'app_trajet_show', methods: ['GET'])]
-    public function show(Trajet $trajet): Response
+
+    // ========================================================================
+    //                        ✨AFFICHER LES DÉTAILS D'UN TRAJET
+    // ========================================================================
+
+    #[Route('api/trajets/{id}', name: 'app_trajet_show', methods: ['GET'])]
+    public function show(int $id,TrajetRepository $repository): JsonResponse
     {
-        return $this->render('trajet/show.html.twig', [
-            'trajet' => $trajet,
-        ]);
-    }
+        // Chercher dans la base de donnée un trajet via son id
+        $trajet = $repository->find($id);
 
-    #[Route('/{id}/edit', name: 'app_trajet_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Trajet $trajet, EntityManagerInterface $entityManager): Response
-    {
-        $form = $this->createForm(TrajetType::class, $trajet);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_trajet_index', [], Response::HTTP_SEE_OTHER);
+        // Si le produit n'existe pas, retourner une erreur 404.
+        if (!$trajet) {
+            return $this->errorResponse('Reservation not found.', Response::HTTP_NOT_FOUND);
         }
 
-        return $this->render('trajet/edit.html.twig', [
-            'trajet' => $trajet,
-            'form' => $form,
-        ]);
+        // Sinon retouner le détails du produit avec le status HTTP 302
+        return $this->json($this->serializeTrajet($trajet), Response::HTTP_FOUND);
+    }
+
+    // ========================================================================
+    //                        ✨MODIFIER UN TRAJET
+    // ========================================================================
+
+    #[Route('api/trajets/{id}/edit', name: 'app_trajet_edit', methods: ['PUT', 'PATCH'])]// PUT: Mettre à jour ou remplacer une ressource | PATCH : Modifier partiellement une ressource
+    public function edit(
+        int $id, 
+        Request $request, 
+        TrajetRepository $repository, 
+        EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Chercher dans la base de donnée le trajet à modifier via son id 
+        $trajet = $repository->find($id);
+
+        // Si le produit n'existe pas, retourner une erreur 404.
+        if (!$trajet) {
+            return $this->errorResponse('Reservation not found.', Response::HTTP_NOT_FOUND);
+        }
+
+        // Décode le JSON de la requête de modification
+        $data = $this->decodeJson($request);
+
+        // Si ce n'est pas un tableau ou qu'il y a une erreur JSON
+        if ($data === null) {
+            // Alors retourner message d'erreur avec code HTTP 400
+            return $this->errorResponse('Invalid JSON body.', Response::HTTP_BAD_REQUEST);
+        }
+
+        // Récupérer la méthode de la requête
+        $isPut = $request->getMethod() === 'PUT';
+
+
+        //=== MODIFIFIER DATE DE DÉPART================
+        if (array_key_exists('date_de_depart', $data) || $isPut) {
+
+            $date_de_depart = $this->parseDateTime($data['date_heure_depart'] ?? null, $error);;
+            
+            if ($date_de_depart === '') {
+                return $this->errorResponse('Departure date is required.', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setDateDeDepart($date_de_depart);
+        }
+
+        //=== MODIFIER ADRESSE LIEU DE DÉPART ================
+        if (array_key_exists('latitude_lieu_de_depart_conducteur', $data) || $isPut) {
+            $value = $this->parseFloat($data, $data['latitude_lieu_depart_conducteur'] ?? null,true,$error);
+            if ($value === null) {
+                return $this->errorResponse($error ?? 'Latitude starting point driver is invalid.', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setLatitudeLieuDepartConducteur($value);
+        
+        }
+
+        if (array_key_exists('longitude_lieu_de_depart_conducteur', $data) || $isPut) {
+            $value = $this->parseFloat($data, $data['longitude_lieu_depart_conducteur'] ?? null,true,$error);
+            if ($value === null) {
+                return $this->errorResponse($error ?? 'Longitude starting point driver is invalid.', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setLongitudeLieuDepartConducteur($value);
+        
+        }
+
+        //=== MODIFIER ADRESSE LIEU DE D'ARRIVÉE ========================
+        if (array_key_exists('latitude_lieu_arrive_conducteur', $data) || $isPut) {
+            $value = $this->parseFloat($data, $data['latitude_lieu_arrive_conducteur'] ?? null,true,$error);
+            if ($value === null) {
+                return $this->errorResponse($error ?? 'Latitude of the arrival point driver is invalid.', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setLatitudeLieuArriveConducteur($value);
+        
+        }
+
+        if (array_key_exists('longitude_lieu_arrive_conducteur', $data) || $isPut) {
+            $value = $this->parseFloat($data, $data['longitude_lieu_arrive_conducteur'] ?? null,true,$error);
+            if ($value === null) {
+                return $this->errorResponse($error ?? 'Longitude of the arrival point driver is invalid.', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setLongitudeLieuArriveConducteur($value);
+        }
+
+        //============= MODIFIER DURÉE =========================
+       
+        if (array_key_exists('duree', $data) || $isPut) {
+            $duree = $this->parseInt($data['duree'] ?? null, $error);
+            if ($duree === null || $duree <= 0) {
+                return $this->errorResponse($error ?? 'The duration must be greater than 0 minutes', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setDuree($duree);
+        }
+           
+
+        //============= NOMBRE DE KM ==================
+        
+         if (array_key_exists('nombre_de_km', $data) || $isPut) {
+            $nombre_de_km = $this->parseInt($data['nombre_de_km'] ?? null, $error);
+            if ($duree === null || $duree <= 0) {
+                return $this->errorResponse($error ?? 'The duration must be greater than 0 minutes', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setNombreDeKm($nombre_de_km);
+        }
+
+        //============= NOMBRE DE PLACES ===============
+
+        if (array_key_exists('nombre_de_place', $data) || $isPut) {
+            $nombre_de_place = $this->parseInt($data['nombre_de_place'] ?? null, $error);
+            if ($nombre_de_place === null || $nombre_de_place < 1) {
+                return $this->errorResponse($error ?? 'The number of places must be at least 1', Response::HTTP_BAD_REQUEST);
+            }
+            $trajet->setNombreDeKm($nombre_de_place);
+        }
+
+        //============= PRIX ===========================
+
+        if (array_key_exists('prix', $data) || $isPut) {
+            $prix = $this->parseFloat($data, $data['prix'] ?? null,true,$error);
+                      
+            if ($prix === null) {
+                // Si le prix est null, retourner une erreur avec le code HTTP (HperTexte Transfer Protocol) 400.
+                return $this->errorResponse($error ?? 'Price is invalid.', Response::HTTP_BAD_REQUEST);
+            }
+
+            $trajet->setPrix($prix);
+        }
+
+        //============= NatureTrajet =========================== 
+
+        // TODO 
+            // $nature_trajet
+            // $type_trajet
+            // $statut_valide
+            // $date_de_publication
+            // $idModeration
+            // $User
+            // $idEtapeTrajet
+            // $idReservation
+
+        // Sinon retouner le détails du produit avec le status HTTP 302
+        return $this->json($this->serializeTrajet($trajet), Response::HTTP_FOUND);
     }
 
     #[Route('/{id}', name: 'app_trajet_delete', methods: ['POST'])]
@@ -299,7 +489,7 @@ final class TrajetController extends AbstractController
     // ========================================================================
 
     /**
-     * json_decode() transforme une chaîne JSON en tableau PHP
+     * Transforme une chaîne JSON en tableau associatif PHP
      * 
      */ 
     private function decodeJson(Request $request): ?array
@@ -349,42 +539,71 @@ final class TrajetController extends AbstractController
         }
 
     /**
-     * Valide et vérifie la data : prix
-     * @param mixed $value
-     * @param bool $required
-     * @param mixed $error
+     * Valide et vérifie la donnée de type décimale (exemple : coordonnées GPS et prix)
+     * @param mixed $data : tableau de données extrait de la requête
+     * @param mixed $value : valeur d'une key du tableau $data
+     * @param bool $required : est-ce que que la valeur est obligatoire ?
+     * @param mixed $error : message d'erreur
      * @return string|null
      */
-    private function parsePrice(mixed $value, bool $required, ?string &$error): ?string
+    private function parseFloat(array $data, mixed $value, bool $required, ?string &$error): ?string
     {
         // Vérifie si la valeur est vide
         if ($value === null || $value === '') {
             if ($required) {
-                $error = 'Price is required.';
+                $error = key ($data) . ' is required.';
             }
             return null;
         }
 
         // Vérifie si c'est un nombre
         if (!is_numeric($value)) {
-            $error = 'Price must be numeric.';
+            $error = key ($data) . ' must be numeric.';
             return null;
         }
 
-        // Convertit en float et vérifie que c'est positif
-        $price = (float) $value;
-        if ($price < 0) {
-            $error = 'Price must be positive.';
+        // Si la donnée est un prix
+        if (key ($data) === "prix") {
+        
+        // Convertit en float
+        $prix = (float) $value;
+        
+        // Vérifie que c'est positif
+        if ($prix < 0) {
+            $error = key ($data) . ' must be positive.';
             return null;
         }
 
         // Formate le prix avec 2 décimales
-        // number_format(999.5, 2, '.', '') → "999.50"
-        return number_format($price, 2, '.', '');
+        return number_format($prix, 2, '.', '');
+
+        }
+    }
+
+
+    /**
+     * Valide et vérifie la donnée de type integer
+     * @param array $value
+     * @return void
+     */
+    private function parseInt (mixed $value,?string $error):?int {
+
+    if ($value === null || $value === '') {
+            $error = 'Integer value is required.';
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            $error = 'Value must be an integer.';
+            return null;
+        }
+
+        return (int) $value;
+
     }
      
     /**
-     * Valide et vérifie la data de l'enum
+     * Valide et vérifie la donnée par rapport à un enum
      * @return void
      * https://symfony.com/doc/current/ai/components/agent.html#automatic-enum-validation
      */
@@ -393,10 +612,22 @@ final class TrajetController extends AbstractController
 
     }
 
-    private function parseDate()
+    private function parseDateTime(mixed $value, ?string &$error): ?\DateTime
     {
+        if ($value === null || $value === '') {
+            $error = 'DateTime is required.';
+            return null;
+        }
 
+        try {
+            return new \DateTime($value);
+        } catch (\Exception $e) {
+            $error = 'Invalid datetime format. Use ISO 8601 format (e.g., 2024-01-20T14:30:00).';
+            return null;
+        }
     }
+
+
 
 
 }
